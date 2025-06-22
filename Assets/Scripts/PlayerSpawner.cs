@@ -12,6 +12,16 @@ namespace TDM
 
         private Dictionary<PlayerRef, NetworkObject> _spawnedCharacters = new();
 
+        void OnEnable()
+        {
+            NetworkManager.RegisterForCallbacks(this);
+        }
+
+        void OnDisable()
+        {
+            NetworkManager.UnRegisterForCallbacks(this);
+        }
+
         #region Spawning
 
         void INetworkRunnerCallbacks.OnPlayerJoined(NetworkRunner runner, PlayerRef player)
@@ -32,6 +42,8 @@ namespace TDM
             NetworkObject networkObject = runner.Spawn(_playerPrefab, spawnPos, Quaternion.identity, player);
 
             _spawnedCharacters.Add(player, networkObject);
+
+            CameraController.AddTarget(networkObject.transform, runner.LocalPlayer == player);
         }
 
         private void DespawnPlayer(NetworkRunner runner, PlayerRef player)
@@ -42,6 +54,8 @@ namespace TDM
             runner.Despawn(playerObject);
             _spawnedCharacters.Remove(player);
         }
+
+        #endregion
 
         void INetworkRunnerCallbacks.OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player)
         {
@@ -111,9 +125,5 @@ namespace TDM
         void INetworkRunnerCallbacks.OnSceneLoadStart(NetworkRunner runner)
         {
         }
-
-        #endregion
-
-
     }
 }

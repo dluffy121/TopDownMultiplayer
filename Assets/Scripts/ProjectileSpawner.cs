@@ -15,7 +15,6 @@ namespace TDM
         [SerializeField] private Projectile _projectilePrefab;
         [SerializeField] private KeyCode _inputKey = KeyCode.Mouse0;
         [SerializeField] private float _spawnRate = 5f / 1f;
-        [SerializeField] private float _lifeSpan = 5f;
 
         private Dictionary<PlayerRef, PlayerProjectileData> _projectilesData = new();
         private bool _keyState_Fire = false;

@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using Fusion;
 using Fusion.Sockets;
 using System;
+using UnityEngine.Events;
 
 namespace TDM
 {
@@ -11,7 +12,13 @@ namespace TDM
     {
         static NetworkManager s_Instance;
 
+        [SerializeField] private NetworkRunner _networkRunnerPrefab;
+
         private NetworkRunner _runner;
+        private NetworkRunner _lastLoadedRunner;
+#if UNITY_EDITOR
+        private NetworkRunner _runner2;
+#endif
 
         void Awake()
         {
@@ -21,49 +28,75 @@ namespace TDM
         void OnDestroy()
         {
             s_Instance = null;
-
-            if (_runner != null)
-            {
-                _runner.Shutdown();
-                Destroy(_runner);
-            }
         }
 
         private void OnGUI()
         {
-            if (_runner != null) return;
-
+            GUILayout.BeginHorizontal();
             if (GUILayout.Button("Host"))
                 StartGame(GameMode.Host);
+            if (s_Instance._runner && GUILayout.Button("Stop"))
+                StopGame(GameMode.Host);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
             if (GUILayout.Button("Join"))
                 StartGame(GameMode.Client);
+#if UNITY_EDITOR
+            if (s_Instance._runner2 && GUILayout.Button("Stop"))
+#else
+            if (s_Instance._runner && GUILayout.Button("Stop"))
+#endif
+                StopGame(GameMode.Client);
+            GUILayout.EndHorizontal();
         }
 
-        private void Initialize()
+        private static NetworkRunner CreateNetworkRunner(string name)
         {
-            if (_runner != null) return;
-
-            _runner = gameObject.AddComponent<NetworkRunner>();
-            s_Instance._runner.ProvideInput = true;
-            DontDestroyOnLoad(gameObject);
+            NetworkRunner runner = Instantiate(s_Instance._networkRunnerPrefab, s_Instance.transform);
+            runner.gameObject.name = name;
+            return runner;
         }
 
         public static void StartGame(GameMode mode)
         {
-            s_Instance.Initialize();
+            string runnerName = "NetworkRunner";
+            ref NetworkRunner runner = ref s_Instance._runner;
 
-            SceneRef scene = SceneRef.FromIndex(SceneManager.GetActiveScene().buildIndex);
+#if UNITY_EDITOR
+            runnerName = mode == GameMode.Host ? "NetworkRunner" : "NetworkRunner2";
+            runner = mode == GameMode.Host ? ref s_Instance._runner : ref s_Instance._runner2;
+#endif
+            runner = CreateNetworkRunner(runnerName);
+
+            SceneRef scene = SceneRef.FromIndex(1);
             NetworkSceneInfo sceneInfo = new();
             if (scene.IsValid)
-                sceneInfo.AddSceneRef(scene, LoadSceneMode.Additive);
+                sceneInfo.AddSceneRef(scene, LoadSceneMode.Single);
 
-            s_Instance._runner.StartGame(new()
+            NetworkSceneManagerDefault sceneManager = runner.gameObject.GetComponent<NetworkSceneManagerDefault>();
+            runner.StartGame(new()
             {
                 GameMode = mode,
                 SessionName = "Gameplay",
                 Scene = scene,
-                SceneManager = s_Instance.gameObject.AddComponent<NetworkSceneManagerDefault>()
+                SceneManager = sceneManager,
             });
+
+            runner.AddCallbacks(s_Instance);
+        }
+
+        private void StopGame(GameMode mode)
+        {
+            ref NetworkRunner runner = ref _runner;
+
+#if UNITY_EDITOR
+            runner = mode == GameMode.Host ? ref s_Instance._runner : ref s_Instance._runner2;
+#endif
+            if (runner == null)
+                return;
+
+            runner.Shutdown();
+            Destroy(runner.gameObject);
         }
 
         #region Input
@@ -117,6 +150,16 @@ namespace TDM
 
         #endregion
 
+        public static void RegisterForCallbacks(INetworkRunnerCallbacks callbacks)
+        {
+            s_Instance._lastLoadedRunner.AddCallbacks(callbacks);
+        }
+
+        public static void UnRegisterForCallbacks(INetworkRunnerCallbacks callbacks)
+        {
+            s_Instance._lastLoadedRunner.RemoveCallbacks(callbacks);
+        }
+
         void INetworkRunnerCallbacks.OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player)
         {
         }
@@ -125,12 +168,18 @@ namespace TDM
         {
         }
 
+        List<PlayerRef> _joinedPlayers = new();
+
         void INetworkRunnerCallbacks.OnPlayerJoined(NetworkRunner runner, PlayerRef player)
         {
+            Debug.Log($"Player {player} joined the game. {player.IsMasterClient}");
+            _joinedPlayers.Add(player);
         }
 
         void INetworkRunnerCallbacks.OnPlayerLeft(NetworkRunner runner, PlayerRef player)
         {
+            Debug.Log($"Player {player} Left the game. {player.IsMasterClient}");
+            _joinedPlayers.Remove(player);
         }
 
         void INetworkRunnerCallbacks.OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason)
@@ -183,6 +232,16 @@ namespace TDM
 
         void INetworkRunnerCallbacks.OnSceneLoadStart(NetworkRunner runner)
         {
+            _lastLoadedRunner = runner;
+            SceneManager.sceneLoaded += l_sceneLoadedCallback;
+
+            void l_sceneLoadedCallback(Scene scene, LoadSceneMode mode)
+            {
+                SceneManager.sceneLoaded -= l_sceneLoadedCallback;
+
+                INetworkRunnerCallbacks[] networkRunnerCallbacks = GetComponentsInChildren<INetworkRunnerCallbacks>(true);
+                Array.ForEach(networkRunnerCallbacks, x => runner.AddCallbacks(x));
+            }
         }
     }
 }
