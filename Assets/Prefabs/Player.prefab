@@ -136,7 +136,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _charController: {fileID: 6029933164190789480}
-  _speed: 10
+  _speed: 15
   _bulletSpawner: {fileID: 1901573671875323817}
 --- !u!114 &6082598187720967613
 MonoBehaviour:
@@ -200,7 +200,7 @@ MonoBehaviour:
   jumpImpulse: 8
   acceleration: 10
   braking: 10
-  maxSpeed: 2
+  maxSpeed: 5
   rotationSpeed: 15
 --- !u!1001 &7190552358456552547
 PrefabInstance:
