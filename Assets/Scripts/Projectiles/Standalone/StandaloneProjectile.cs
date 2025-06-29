@@ -1,14 +1,16 @@
 using System;
-using Fusion;
 using UnityEngine;
+using Fusion;
 
 namespace TDM
 {
-    public class Projectile : NetworkBehaviour
+    public class StandaloneProjectile : NetworkBehaviour
     {
-        [SerializeField] private float _speed = 5;
+        [SerializeField] protected float _speed = 5;
 
-        [Networked] private TickTimer _life { get; set; }
+        [Networked] protected TickTimer LifeTick { get; set; }
+
+        [SerializeField] protected Vector3 _barrelPosition;
 
         public event Action OnDespawn;
 
@@ -16,7 +18,7 @@ namespace TDM
         {
             base.Spawned();
 
-            _life = TickTimer.CreateFromSeconds(Runner, 5.0f);
+            LifeTick = TickTimer.CreateFromSeconds(Runner, 5.0f);
         }
 
         public override void Despawned(NetworkRunner runner, bool hasState)
@@ -31,10 +33,13 @@ namespace TDM
         {
             base.FixedUpdateNetwork();
 
-            if (_life.Expired(Runner))
+            if (LifeTick.Expired(Runner))
+            {
                 Runner.Despawn(Object);
-            else
-                transform.position += _speed * Runner.DeltaTime * transform.forward;
+                return;
+            }
+
+            transform.position += _speed * Runner.DeltaTime * transform.forward;
         }
     }
 }
