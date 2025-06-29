@@ -10,6 +10,7 @@ namespace TDM
         [SerializeField] private float _speed;
 
         [SerializeField] private ProjectileSpawner _bulletSpawner;
+        [SerializeField] private KinematicWeapon _weapon;
 
         private Vector3 _forward = Vector3.forward;
 
@@ -41,13 +42,19 @@ namespace TDM
             if (inputData.direction.sqrMagnitude > 0)
                 _forward = inputData.direction;
 
+            // if (HasStateAuthority
+            //     && _bulletSpawner.CanSpawnProjectile(Runner, Object.InputAuthority, inputData))
+            // {
+            //     _bulletSpawner.SpawnProjectile<SimpleBullet>(Runner,
+            //                                                  Object.InputAuthority,
+            //                                                  transform.position + _forward,
+            //                                                  Quaternion.LookRotation(_forward));
+            // }
+
             if (HasStateAuthority
-                && _bulletSpawner.CanSpawnProjectile(Runner, Object.InputAuthority, inputData))
+                && _weapon.CanSpawnProjectile(Runner, Object.InputAuthority, inputData))
             {
-                _bulletSpawner.SpawnProjectile<SimpleBullet>(Runner,
-                                                             Object.InputAuthority,
-                                                             transform.position + _forward,
-                                                             Quaternion.LookRotation(_forward));
+                _weapon.Fire(Runner);
             }
         }
 
