@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3056934033473335698}
   - component: {fileID: 8766897037707529162}
   m_Layer: 0
-  m_Name: Gun
+  m_Name: Pistol
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -46,4 +46,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _projectilePrefab: {fileID: 472075039543289718, guid: 8c290d9e4d2935e4f9bc2c5ef4172bdf, type: 3}
   _inputKey: 323
-  _spawnRate: 20
+  _spawnRate: 3
