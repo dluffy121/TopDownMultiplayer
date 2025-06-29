@@ -79,8 +79,6 @@ namespace TDM
 
             if (runner.Tick - data.FireTick >= _lifetimeTicks)
                 data.IsFinished = true;
-
-            Debug.LogError("Fixed Update: " + previousTickPos);
         }
     }
 }
