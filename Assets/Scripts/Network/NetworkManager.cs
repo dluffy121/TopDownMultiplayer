@@ -4,7 +4,6 @@ using UnityEngine.SceneManagement;
 using Fusion;
 using Fusion.Sockets;
 using System;
-using UnityEngine.Events;
 
 namespace TDM
 {
