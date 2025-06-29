@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9105e61192244c840ba839e2fe05743f, type: 3}
+  m_Name: SimpleKinematicProjectile
+  m_EditorClassIdentifier: 
+  _speed: 30
+  _maxDistance: 10000
+  _maxTime: 5
+  hitMask:
+    serializedVersion: 2
+    m_Bits: 8
+  _visualPrefab: {fileID: 3140856896600613686, guid: b4c388ba2b8d8fc4d8e59a3a29d3cf7e, type: 3}
