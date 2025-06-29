@@ -12,7 +12,7 @@ namespace TDM
             public TickTimer NextSpawnTime;
         }
 
-        [SerializeField] private Projectile _projectilePrefab;
+        [SerializeField] private StandaloneProjectile _projectilePrefab;
         [SerializeField] private KeyCode _inputKey = KeyCode.Mouse0;
         [SerializeField] private float _spawnRate = 5f / 1f;
 
@@ -39,7 +39,6 @@ namespace TDM
         #endregion
 
         #region Input
-
 
         void INetworkInputListener.OnInput(NetworkRunner runner, ref NPlayerInputData input)
         {
@@ -69,7 +68,7 @@ namespace TDM
         }
 
         public T SpawnProjectile<T>(NetworkRunner runner, PlayerRef player, Vector3 position, Quaternion rotation)
-            where T : Projectile
+            where T : StandaloneProjectile
         {
             if (!runner.IsServer) return default;
 
