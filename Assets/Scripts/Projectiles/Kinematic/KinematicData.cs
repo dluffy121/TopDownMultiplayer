@@ -22,8 +22,10 @@ namespace TDM
         public int FireTick;
 
         public Vector3Compressed Velocity;
-
         public Vector3Compressed Position;
+
+        public Vector3Compressed ImpactPosition;
+        public Vector3Compressed ImpactNormal;
 
         public static Vector3 GetMovePosition(KinematicData data, NetworkRunner runner, float currentTick)
         {
