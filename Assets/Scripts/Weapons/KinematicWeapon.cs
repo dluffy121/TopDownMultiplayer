@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace TDM
 {
-    public class KinematicWeapon : MonoBehaviour, INetworkInputListener
+    public class KinematicWeapon : MonoBehaviour, INetworkInputListener, IWeapon
     {
         [SerializeField] KinematicProjectile _projectile;
         [SerializeField] Transform _fireOffset;
