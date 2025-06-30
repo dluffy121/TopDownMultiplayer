@@ -10,7 +10,7 @@ namespace TDM
         [SerializeField] private float _speed;
 
         [SerializeField] private ProjectileSpawner _bulletSpawner;
-        [SerializeField] private KinematicWeapon _weapon;
+        [SerializeField] private HitscanWeapon _weapon;
 
         private Vector3 _forward = Vector3.forward;
 
