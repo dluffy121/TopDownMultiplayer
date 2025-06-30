@@ -10,7 +10,7 @@ namespace TDM
         [SerializeField] float _maxDistance;
         [SerializeField] float _maxTime;
 
-        [SerializeField] LayerMask hitMask;
+        [SerializeField] LayerMask _hitMask;
 
         [SerializeField] KinematicProjectileVisual _visualPrefab;
 
@@ -69,7 +69,7 @@ namespace TDM
                                                        distance,
                                                        context.Owner,
                                                        out LagCompensatedHit hit,
-                                                       hitMask,
+                                                       _hitMask,
                                                        hitOptions))
             {
                 // Destroy(hit.GameObject);
