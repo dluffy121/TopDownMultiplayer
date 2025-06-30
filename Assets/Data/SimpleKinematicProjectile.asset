@@ -15,7 +15,7 @@ MonoBehaviour:
   _speed: 30
   _maxDistance: 10000
   _maxTime: 5
-  hitMask:
+  _hitMask:
     serializedVersion: 2
     m_Bits: 8
   _visualPrefab: {fileID: 3140856896600613686, guid: b4c388ba2b8d8fc4d8e59a3a29d3cf7e, type: 3}
