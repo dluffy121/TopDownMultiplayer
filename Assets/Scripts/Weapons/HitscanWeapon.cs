@@ -11,6 +11,8 @@ namespace TDM
         [SerializeField] float _fireRate = 5f / 1f;
         [SerializeField] HitscanProjectilesHandler _projectileHandler;
 
+        GameObject IWeapon.gameObject => gameObject;
+
         TickTimer NextSpawnTime;
         private bool _keyState_Fire = false;
 
