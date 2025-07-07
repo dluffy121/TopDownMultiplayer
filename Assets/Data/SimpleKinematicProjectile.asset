@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: SimpleKinematicProjectile
   m_EditorClassIdentifier: 
   _speed: 30
-  _maxDistance: 10000
+  _maxDistance: 1000
   _maxTime: 5
+  _baseDamage: 10
   _hitMask:
     serializedVersion: 2
     m_Bits: 8

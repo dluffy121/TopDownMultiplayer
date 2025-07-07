@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1d1b652808daf74eb10c6eed85d0065, type: 3}
   m_Name: SimpleHitscanProjectile
   m_EditorClassIdentifier: 
-  _maxDistance: 100
+  _maxDistance: 300
   _hitMask:
     serializedVersion: 2
     m_Bits: 8
+  _baseDamage: 10
   _visualPrefab: {fileID: -3265410598224811343, guid: 9698c08418b3f1a4cadc1cdc5a3c0f0a, type: 3}
