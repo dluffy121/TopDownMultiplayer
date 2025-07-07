@@ -16,7 +16,8 @@ namespace TDM
             // TODO : Implement activation logic
             IsFinished = false;
 
-            transform.SetPositionAndRotation(data.FirePosition,
+            Fusion.Vector3Compressed impactPosition = data.ImpactPosition == default ? data.FirePosition : data.ImpactPosition;
+            transform.SetPositionAndRotation(impactPosition,
                                              Quaternion.LookRotation(data.FireDirection));
 
             // Spawn impact
