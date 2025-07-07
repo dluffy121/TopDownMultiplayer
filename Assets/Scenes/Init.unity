@@ -180,7 +180,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RunnerPrefab: {fileID: 5256976124066332207, guid: 4a990e327a23ea04c8ac55bf38ab8e5b, type: 3}
   StartMode: 0
-  StartScenePath: Assets/Scenes/Game.unity
   AutoStartAs: 2
   AutoHideGUI: 1
   AutoClients: 1
