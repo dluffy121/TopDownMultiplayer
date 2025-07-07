@@ -54,7 +54,8 @@ namespace TDM
             if (inputData.direction.sqrMagnitude > 0)
                 _forward = inputData.direction;
 
-            if (HasInputAuthority)
+            // Make sure that Host only controls firing
+            if (HasStateAuthority)
                 FireWeapon(inputData);
         }
 
