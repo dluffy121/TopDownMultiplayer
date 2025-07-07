@@ -40,7 +40,7 @@ namespace TDM
 
             Vector3 spawnPos = new(player.RawEncoded % runner.Config.Simulation.PlayerCount * 3, 1, 0);
             NetworkObject networkObject = runner.Spawn(_playerPrefab, spawnPos, Quaternion.identity, player);
-
+            runner.SetPlayerObject(player, networkObject);
             _spawnedCharacters.Add(player, networkObject);
 
             CameraController.AddTarget(networkObject.transform, runner.LocalPlayer == player);
