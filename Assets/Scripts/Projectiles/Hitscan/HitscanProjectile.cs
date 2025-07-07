@@ -8,6 +8,7 @@ namespace TDM
     {
         [SerializeField] private float _maxDistance = 100f;
         [SerializeField] LayerMask _hitMask;
+        [SerializeField] byte _baseDamage;
 
         [SerializeField] private HitscanProjectileVisual _visualPrefab;
 
@@ -19,15 +20,24 @@ namespace TDM
                 FireDirection = direction
             };
 
+            HitOptions hitOptions = HitOptions.IncludePhysX | HitOptions.IgnoreInputAuthority;
             if (context.Runner.LagCompensation.Raycast(firePosition,
                                                        direction,
                                                        _maxDistance,
                                                        context.Owner,
-                                                       out LagCompensatedHit hitInfo,
-                                                       _hitMask))
+                                                       out LagCompensatedHit hit,
+                                                       _hitMask,
+                                                       hitOptions))
             {
-                data.ImpactPosition = hitInfo.Point;
-                data.ImpactNormal = hitInfo.Normal;
+                data.ImpactPosition = hit.Point;
+                data.ImpactNormal = hit.Normal;
+
+                HitProcessor.ProcessProjectileHit(context,
+                                                  hit.GameObject,
+                                                  _baseDamage,
+                                                  hit.Point,
+                                                  direction,
+                                                  hit.Normal);
             }
 
             return data;
@@ -44,7 +54,7 @@ namespace TDM
         internal void RemoveVisualInstance(HitscanProjectileVisual visual)
         {
             // TODO : Pooling
-            Destroy(visual);
+            Destroy(visual.gameObject);
         }
     }
 }

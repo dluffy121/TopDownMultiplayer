@@ -9,6 +9,7 @@ namespace TDM
         [SerializeField] float _speed;
         [SerializeField] float _maxDistance;
         [SerializeField] float _maxTime;
+        [SerializeField] byte _baseDamage;
 
         [SerializeField] LayerMask _hitMask;
 
@@ -49,12 +50,13 @@ namespace TDM
         internal void RemoveVisualInstance(KinematicProjectileVisual visual)
         {
             // TODO : Pooling
-            Destroy(visual);
+            Destroy(visual.gameObject);
         }
 
         public virtual void OnFixedUpdate(ProjectileContext context, ref KinematicData data)
         {
             NetworkRunner runner = context.Runner;
+            if (runner.LocalPlayer != context.Owner) return;
 
             Vector3 previousTickPos = KinematicData.GetMovePosition(data, runner, runner.Tick - 1);
             Vector3 currentTickPos = KinematicData.GetMovePosition(data, runner, runner.Tick);
@@ -65,14 +67,19 @@ namespace TDM
 
             HitOptions hitOptions = HitOptions.IncludePhysX | HitOptions.SubtickAccuracy | HitOptions.IgnoreInputAuthority;
             if (runner.LagCompensation.Raycast(previousTickPos,
-                                                       direction,
-                                                       distance,
-                                                       context.Owner,
-                                                       out LagCompensatedHit hit,
-                                                       _hitMask,
-                                                       hitOptions))
+                                               direction,
+                                               distance,
+                                               context.Owner,
+                                               out LagCompensatedHit hit,
+                                               _hitMask,
+                                               hitOptions))
             {
-                // Destroy(hit.GameObject);
+                HitProcessor.ProcessProjectileHit(context,
+                                                  hit.GameObject,
+                                                  _baseDamage,
+                                                  hit.Point,
+                                                  direction,
+                                                  hit.Normal);
 
                 data.IsFinished = true;
             }
