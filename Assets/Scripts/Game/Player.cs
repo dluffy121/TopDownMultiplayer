@@ -116,7 +116,7 @@ namespace TDM
 
         private void FireWeapon(NPlayerInputData inputData)
         {
-            if (WeaponIndex > 0
+            if (WeaponIndex >= 0
                 && _weapons[WeaponIndex].CanSpawnProjectile(Runner, Object.InputAuthority, inputData))
                 _weapons[WeaponIndex].Fire(Runner);
         }
@@ -124,7 +124,7 @@ namespace TDM
         [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
         internal void RPC_AssignWeapon(int weaponIndex)
         {
-            if (WeaponIndex > 0)
+            if (WeaponIndex >= 0)
                 _weapons[WeaponIndex].gameObject.SetActive(false);
 
             WeaponIndex = weaponIndex;
