@@ -3,11 +3,16 @@ using UnityEngine;
 
 namespace TDM
 {
-    public class Player : NetworkBehaviour, INetworkInputListener
+    public class Player : NetworkBehaviour, INetworkInputListener, IHitTarget, IHitInstigator
     {
         [SerializeField] private NetworkCharacterController _charController;
         [SerializeField] private float _speed;
         [SerializeField] private ProjectileSpawner _bulletSpawner;
+
+        [Header("Health")]
+        [Networked, OnChangedRender(nameof(OnHealthUpdate))]
+        private byte Health { get; set; } = 0;
+        [SerializeField] private UIOverheadHealth _UIhealth;
 
         [Header("Visual")]
         [SerializeField] private Material _localMaterial;
@@ -39,6 +44,9 @@ namespace TDM
 
             if (Runner.LocalPlayer == Object.InputAuthority)
                 _renderer.material = _localMaterial;
+
+            Health = 100;
+            OnHealthUpdate();
         }
 
         public override void FixedUpdateNetwork()
@@ -122,6 +130,60 @@ namespace TDM
             WeaponIndex = weaponIndex;
 
             _weapons[WeaponIndex].gameObject.SetActive(true);
+        }
+
+        #endregion
+
+        #region IHitTarget
+
+        public bool IsAlive => Health > 0;
+
+        bool IHitTarget.TryTakeHit(ref HitData hit)
+        {
+            if (!IsAlive)
+                return false;
+
+            if (Object.HasStateAuthority)
+                Health -= hit.Damage;
+            else if (Object.IsProxy)
+                RPC_TakeHit(hit.Damage);
+
+            return true;
+        }
+
+        /// <summary>
+        /// RPC call to update state authority of this objects Health
+        /// At this point InputAuthority is the one who is inflicting hit, could be host or client
+        /// Also the StateAuthority doesn't know of this interaction and hence is nowhere in the scope 
+        /// Hence it is assumed that the Hit taker is a Proxy
+        /// </summary>
+        /// <param name="damage"></param>
+        /// <param name="info"></param>
+        [Rpc(RpcSources.Proxies, RpcTargets.StateAuthority)]
+        void RPC_TakeHit(byte damage, RpcInfo info = default)
+        {
+            Health -= damage;
+        }
+
+        #endregion
+
+        #region IHitInstigator
+
+        public void HitPerformed(HitData hit)
+        {
+
+        }
+
+        #endregion
+
+        #region Health
+
+        /// <summary>
+        /// Updates health UI of the player
+        /// </summary>
+        private void OnHealthUpdate()
+        {
+            _UIhealth.Set(Health);
         }
 
         #endregion
