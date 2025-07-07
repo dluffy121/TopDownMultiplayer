@@ -73,7 +73,7 @@ namespace TDM
 
             if (other.CompareTag("Pickup")
                 && other.TryGetComponent(out Pickup pickup))
-                Rpc_RequestPickup(pickup.Object.Id);
+                RPC_RequestPickup(pickup.Object.Id);
         }
 
         #region Input
@@ -98,7 +98,7 @@ namespace TDM
         #region Pickup
 
         [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-        internal void Rpc_RequestPickup(NetworkId pickupId, RpcInfo info = default)
+        internal void RPC_RequestPickup(NetworkId pickupId, RpcInfo info = default)
         {
             NetworkObject networkObject = Runner.FindObject(pickupId);
             if (networkObject == null) return;
