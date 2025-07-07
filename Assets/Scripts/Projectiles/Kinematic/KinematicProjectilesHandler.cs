@@ -226,7 +226,7 @@ namespace TDM
             List<int> finishedVisual = new();
 
             foreach (KeyValuePair<int, VisualEntry> idxVisualPair in _spawnedVisuals)
-                if (idxVisualPair.Value.Visual.IsFinished)
+                if (idxVisualPair.Value.LastData.IsFinished)
                     finishedVisual.Add(idxVisualPair.Key);
 
             foreach (int index in finishedVisual)

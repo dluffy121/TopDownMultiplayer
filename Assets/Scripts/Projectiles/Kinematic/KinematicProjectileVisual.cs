@@ -7,14 +7,12 @@ namespace TDM
     {
         internal int _projectileType;
 
-        public bool IsFinished { get; private set; }
-
         internal void Activate(ref KinematicData data)
         {
             transform.SetPositionAndRotation(data.Position,
                                              Quaternion.LookRotation(data.Velocity));
 
-            IsFinished = false;
+            data.IsFinished = false;
         }
 
         internal void Deactivate()
