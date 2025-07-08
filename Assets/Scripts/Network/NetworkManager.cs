@@ -79,6 +79,7 @@ namespace TDM
                 SessionName = "Gameplay",
                 Scene = scene,
                 SceneManager = sceneManager,
+                ObjectProvider = runner.GetComponent<PoolObjectProvider>()
             });
 
             runner.AddCallbacks(s_Instance);
