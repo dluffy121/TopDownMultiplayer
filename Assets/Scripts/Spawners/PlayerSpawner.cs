@@ -14,12 +14,14 @@ namespace TDM
 
         void OnEnable()
         {
-            NetworkManager.RegisterForCallbacks(this);
+            NetworkRunner runner = NetworkRunner.GetRunnerForGameObject(gameObject);
+            runner?.AddCallbacks(this);
         }
 
         void OnDisable()
         {
-            NetworkManager.UnRegisterForCallbacks(this);
+            NetworkRunner runner = NetworkRunner.GetRunnerForGameObject(gameObject);
+            runner?.RemoveCallbacks(this);
         }
 
         #region Spawning
