@@ -99,3 +99,7 @@ crashlytics-build.properties
 # Samples
 /[Aa]ssets/[Ss]amples.meta
 /[Aa]ssets/[Ss]amples/
+
+# Text Mesh Pro
+/[Aa]ssets/[Tt]ext[Mm]esh [Pp]ro.meta
+/[Aa]ssets/[Tt]ext[Mm]esh [Pp]ro/
