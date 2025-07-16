@@ -5,13 +5,13 @@ using Random = System.Random;
 namespace TDM
 {
     [Tooltip("Manager that stores a token per user to help reassign input authority in Client Host Mode during host migration and reconnects.")]
-    public class SessionID : MonoBehaviour
+    public class SessionID
     {
-        public static long ID { get; private set; }
+        public long ID { get; private set; }
 
-        public static byte[] ByteID { get; private set; } = new byte[8];
+        public byte[] ByteID { get; private set; } = new byte[8];
 
-        private void Awake()
+        public SessionID()
         {
             new Random().NextBytes(ByteID);
             ID = ConvertID(ByteID);

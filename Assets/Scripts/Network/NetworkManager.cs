@@ -1,23 +1,19 @@
+using System;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.SceneManagement;
+using System.Threading.Tasks;
 using Fusion;
 using Fusion.Sockets;
-using System;
-using System.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using FStartGameResult = Fusion.StartGameResult;
 
 namespace TDM
 {
+    public record StartGameResult(FStartGameResult Result, NetworkRunner NewRunner);
+
     public class NetworkManager : MonoBehaviour, INetworkRunnerCallbacks
     {
         static NetworkManager s_Instance;
-
-        [SerializeField] private NetworkRunner _networkRunnerPrefab;
-
-        HashSet<NetworkRunner> _runners = new();
-
-        private NetworkRunner _hostRunner;
-
 
         void Awake()
         {
@@ -29,50 +25,66 @@ namespace TDM
             s_Instance = null;
         }
 
-        private static NetworkRunner CreateNetworkRunner(string name)
+        #region Runner Handling
+
+        class RunnerData
+        {
+            public NetworkRunner runner;
+            public SessionID sessionID;
+        }
+
+        [SerializeField] private NetworkRunner _networkRunnerPrefab;
+
+        private readonly Dictionary<NetworkRunner, SessionID> _runners = new();
+        private NetworkRunner _hostRunner;
+
+        public static async Task<StartGameResult> StartGameAsync(GameMode mode,
+                                                                 SessionID sessionID = null,
+                                                                 HostMigrationToken hostMigrationToken = null,
+                                                                 Action<NetworkRunner> onHostMigrationResume = null)
+        {
+            NetworkRunner runner = CreateNetworkRunner(mode);
+            s_Instance._runners[runner] = sessionID ??= new();
+            return new(
+                await runner.StartGame(new()
+                {
+                    GameMode = mode,
+                    SessionName = "TopDownShooter",
+                    PlayerCount = 8,
+                    SceneManager = runner.gameObject.GetComponent<NetworkSceneManagerDefault>(),
+                    ObjectProvider = runner.GetComponent<PoolObjectProvider>(),
+                    ConnectionToken = sessionID.ByteID,
+                    OnGameStarted = OnGameStarted,
+                    HostMigrationToken = hostMigrationToken,
+                    HostMigrationResume = onHostMigrationResume,
+                }),
+                runner);
+        }
+
+        public static void StopGame(NetworkRunner runner)
+        {
+            if (runner == s_Instance._hostRunner)
+                s_Instance._hostRunner = null;
+            s_Instance._runners.Remove(runner);
+            runner.Shutdown(true);
+        }
+
+        private static NetworkRunner CreateNetworkRunner(GameMode mode)
         {
             NetworkRunner runner = Instantiate(s_Instance._networkRunnerPrefab, s_Instance.transform);
-            runner.name = name;
+            runner.name = s_Instance.GetRunnerName(mode);
             runner.ProvideInput = true;
             runner.AddCallbacks(s_Instance);
             return runner;
         }
 
-        public static async Task<bool> StartGameAsync(GameMode mode)
-        {
-            NetworkRunner runner = CreateNetworkRunner(s_Instance.GetRunnerName(mode));
-
-            StartGameResult result = await runner.StartGame(new()
-            {
-                GameMode = mode,
-                SessionName = "TopDownShooter" + SessionID.ID,
-                PlayerCount = 8,
-                SceneManager = runner.gameObject.GetComponent<NetworkSceneManagerDefault>(),
-                ObjectProvider = runner.GetComponent<PoolObjectProvider>(),
-                ConnectionToken = SessionID.ByteID,
-                OnGameStarted = OnGameStarted
-            });
-
-            if (!result.Ok)
-                return result.Ok;
-
-            if (mode == GameMode.Host ||
-                (mode == GameMode.AutoHostOrClient && s_Instance._hostRunner == null))
-                s_Instance._hostRunner = runner;
-
-            return result.Ok;
-        }
-
         private static void OnGameStarted(NetworkRunner runner)
         {
-            GameManager.SwitchGameState(EGameState.Game, runner);
-            s_Instance._runners.Add(runner);
-        }
+            if (runner.GameMode == GameMode.Host ||
+                (runner.GameMode == GameMode.AutoHostOrClient && s_Instance._hostRunner == null))
+                s_Instance._hostRunner = runner;
 
-        public static void StopGame(NetworkRunner runner)
-        {
-            runner.Shutdown();
-            Destroy(runner.gameObject);
+            GameManager.SwitchGameState(EGameState.Game, runner);
         }
 
         private string GetRunnerName(GameMode mode)
@@ -95,6 +107,8 @@ namespace TDM
             int L_RunnerCount() => _runners.Count;
         }
 
+        #endregion
+
         #region Input
 
         // As we know when we have multiple OnInput implementations, Fusion will call all of them but only the last input set will be honoured, therefore losing all previous inputs.
@@ -105,7 +119,7 @@ namespace TDM
         // Otherwise a proper more complex input handling system can be implemented
         // where listeners can be sorted by priority or some other criteria.
 
-        private HashSet<INetworkInputListener> _inputListeners = new();
+        private readonly HashSet<INetworkInputListener> _inputListeners = new();
 
         public static void RegisterForInput(INetworkInputListener listener)
         {
@@ -126,7 +140,7 @@ namespace TDM
                 return;
             }
 
-            s_Instance._inputListeners.Add(listener);
+            s_Instance._inputListeners.Remove(listener);
         }
 
         void INetworkRunnerCallbacks.OnInput(NetworkRunner runner, NetworkInput input)
@@ -142,6 +156,91 @@ namespace TDM
         void INetworkRunnerCallbacks.OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input)
         {
             Debug.LogWarning($"Input missing for player {player}. This can happen if the player is not sending input or if the input is not being processed correctly.");
+        }
+
+        #endregion
+
+        #region Host Migration
+
+        private readonly HashSet<IHostMigrationListener> _hostMigrationListeners = new();
+
+        public static void RegisterHostMigrationListener(IHostMigrationListener listener)
+        {
+            if (s_Instance == null)
+            {
+                Debug.LogError("NetworkManager instance is not initialized.");
+                return;
+            }
+
+            s_Instance._hostMigrationListeners.Add(listener);
+        }
+
+        public static void UnregisterHostMigrationListener(IHostMigrationListener listener)
+        {
+            if (s_Instance == null)
+            {
+                Debug.LogError("NetworkManager instance is not initialized.");
+                return;
+            }
+
+            s_Instance._hostMigrationListeners.Remove(listener);
+        }
+
+        async void INetworkRunnerCallbacks.OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken)
+        {
+            SessionID sessionID = s_Instance._runners[runner];
+
+            // Shutdown old Runner
+            await runner.Shutdown(shutdownReason: ShutdownReason.HostMigration);
+
+            StartGameResult result = await StartGameAsync(hostMigrationToken.GameMode,
+                                                          sessionID,
+                                                          hostMigrationToken,
+                                                          HostMigrationResume);
+
+            if (result.Result.Ok)
+                await result.NewRunner.PushHostMigrationSnapshot();
+        }
+
+        private void HostMigrationResume(NetworkRunner runnerMigration)
+        {
+            // Get a temporary reference for each NO from the old Host
+            foreach (NetworkObject resumeNO in runnerMigration.GetResumeSnapshotNetworkObjects())
+            {
+                bool hasTRSP = resumeNO.TryGetBehaviour<NetworkTRSP>(out var trsp);
+                Vector3 position = hasTRSP ? trsp.Data.Position : Vector3.zero;
+                Quaternion rotation = hasTRSP ? trsp.Data.Rotation : Quaternion.identity;
+
+                // Spawn a new object based on the previous objects
+                NetworkObject newNO = runnerMigration.Spawn(resumeNO,
+                                                            position,
+                                                            rotation,
+                                                            onBeforeSpawned: onBeforeSpawned);
+
+                foreach (IHostMigrationListener listener in _hostMigrationListeners)
+                    listener?.OnResumeNetworkObject(resumeNO, newNO);
+
+                void onBeforeSpawned(NetworkRunner networkRunner, NetworkObject newNO)
+                {
+                    newNO.CopyStateFrom(resumeNO);
+
+                    foreach (IHostMigrationListener listener in _hostMigrationListeners)
+                        listener?.OnSpawnNetworkObject(newNO);
+                }
+            }
+
+            // Updates the state information of the scene objects loaded
+            // For static or baked scene objects
+            foreach (var sceneObject in runnerMigration.GetResumeSnapshotNetworkSceneObjects())
+            {
+                sceneObject.Item1.CopyStateFrom(sceneObject.Item2);
+
+                foreach (IHostMigrationListener listener in _hostMigrationListeners)
+                    listener?.OnResumeSceneNetworkObject(sceneObject);
+            }
+
+            foreach (IHostMigrationListener listener in _hostMigrationListeners)
+                listener?.OnHostMigrationResume(runnerMigration);
         }
 
         #endregion
@@ -167,13 +266,12 @@ namespace TDM
         void INetworkRunnerCallbacks.OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason)
         {
             _runners.Remove(runner);
-            if (Application.isPlaying && shutdownReason != ShutdownReason.HostMigration)
+            if (Application.isPlaying)
             {
 #if UNITY_EDITOR
                 if (FusionEditorUtils.IsMultiPeerEnabled
                     && (s_Instance._runners.Count == 0 || shutdownReason == ShutdownReason.DisconnectedByPluginLogic))
 #endif
-                    // This is a repeated call but this time only changes state locally
                     GameManager.SwitchGameState(EGameState.MainMenu);
             }
         }
@@ -214,10 +312,6 @@ namespace TDM
         {
         }
 
-        void INetworkRunnerCallbacks.OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken)
-        {
-        }
-
         void INetworkRunnerCallbacks.OnSceneLoadDone(NetworkRunner runner)
         {
         }
@@ -232,6 +326,9 @@ namespace TDM
 
                 INetworkRunnerCallbacks[] networkRunnerCallbacks = GetComponentsInChildren<INetworkRunnerCallbacks>(true);
                 Array.ForEach(networkRunnerCallbacks, x => runner.AddCallbacks(x));
+
+                IHostMigrationListener[] hostMigrationListeners = GetComponentsInChildren<IHostMigrationListener>(true);
+                Array.ForEach(hostMigrationListeners, x => RegisterHostMigrationListener(x));
             }
         }
     }
