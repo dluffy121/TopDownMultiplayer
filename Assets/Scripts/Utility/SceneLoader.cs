@@ -13,7 +13,6 @@ namespace TDM
             TaskCompletionSource<object> tcs = new();
             AsyncOperation op = SceneManager.LoadSceneAsync(sceneIndex, loadSceneMode);
             op.allowSceneActivation = true;
-
             op.completed += _ => tcs.TrySetResult(null);
             return tcs.Task;
         }
@@ -22,10 +21,9 @@ namespace TDM
         {
             if (!runner.IsSceneAuthority) return Task.CompletedTask;
             TaskCompletionSource<object> tcs = new();
-            NetworkSceneAsyncOp op = runner.LoadScene(SceneRef.FromIndex(sceneIndex), loadSceneMode);
+            NetworkSceneAsyncOp op = runner.LoadScene(SceneRef.FromIndex(sceneIndex), loadSceneMode, setActiveOnLoad: true);
             op.AddOnCompleted(_ => tcs.TrySetResult(null));
             return tcs.Task;
         }
     }
-
 }
