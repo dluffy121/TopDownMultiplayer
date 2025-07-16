@@ -5,6 +5,19 @@ namespace TDM
 {
     public class Player : NetworkBehaviour, INetworkInputListener, IHitTarget, IHitInstigator
     {
+        public static Player LocalPlayer { get; private set; }
+
+        [Networked, OnChangedRender(nameof(OnMasterClientOrHostChange)), Tooltip("Is this player the shared mode master client?")]
+        public NetworkBool IsSharedMasterClient { get; set; }
+
+        [Networked, OnChangedRender(nameof(OnMasterClientOrHostChange)), Tooltip("Is this player Player Host?")]
+        public NetworkBool IsHostClient { get; set; }
+
+        [Networked, Tooltip("The Remote Client's Connection Token Hash.")]
+        public long Token { get; set; }
+
+        [SerializeField] private float _despawnDelay = 5;
+
         [SerializeField] private NetworkCharacterController _charController;
         [SerializeField] private float _speed;
         [SerializeField] private ProjectileSpawner _bulletSpawner;
@@ -15,9 +28,14 @@ namespace TDM
         [SerializeField] private UIOverheadHealth _UIhealth;
 
         [Header("Visual")]
-        [SerializeField] private Material _localMaterial;
+        [Networked, OnChangedRender(nameof(OnPlayerColorChanged))]
+        public byte PlayerMatIndex { get; set; } = 0;
+        [SerializeField] private Material[] _playerMaterials;
         [SerializeField] private Renderer _renderer;
+        [SerializeField] private Renderer _crownRenderer;
 
+        private PlayerSpawner _spawnerRef;
+        private float _despawnTime;
         private IWeapon[] _weapons;
         private Vector3 _forward = Vector3.forward;
 
@@ -38,24 +56,76 @@ namespace TDM
             NetworkManager.UnregisterFromInput(this);
         }
 
+        void OnDestroy()
+        {
+            _renderer.material = null;
+        }
+
         public override void Spawned()
         {
             base.Spawned();
 
-            if (Runner.LocalPlayer == Object.InputAuthority)
-                _renderer.material = _localMaterial;
+            CheckLocalPlayer();
+
+            OnPlayerColorChanged();
 
             Health = 100;
             OnHealthUpdate();
+
+            OnMasterClientOrHostChange();
+        }
+
+        public void CheckLocalPlayer()
+        {
+            if (Runner.GameMode == GameMode.Shared)
+            {
+                if (HasStateAuthority)
+                {
+                    LocalPlayer = this;
+                    IsSharedMasterClient = Runner.IsSharedModeMasterClient;
+                }
+            }
+            else
+            {
+                if (HasInputAuthority)
+                {
+                    LocalPlayer = this;
+                    IsHostClient = Runner.IsServer;
+                }
+            }
+        }
+
+        public void OnMasterClientOrHostChange()
+        {
+            bool isSMCOrHost = IsSharedMasterClient || IsHostClient;
+            _crownRenderer.gameObject.SetActive(isSMCOrHost);
+        }
+
+        private void OnPlayerColorChanged()
+        {
+            _renderer.material = _playerMaterials[PlayerMatIndex];
         }
 
         public override void FixedUpdateNetwork()
         {
             base.FixedUpdateNetwork();
 
-            if (!GetInput(out NPlayerInputData inputData))
+            if (GetInput(out NPlayerInputData inputData))
+                UpdateInput(inputData);
+
+            // This is only done in Client Host Mode, but gives players an period of time to try and reconnect before being despawned.
+            if (Runner.IsPlayerValid(Object.InputAuthority))
                 return;
 
+            IsHostClient = false;
+
+            _despawnTime += Runner.DeltaTime;
+            if (_despawnTime >= _despawnDelay)
+                Runner.Despawn(Object);
+        }
+
+        private void UpdateInput(NPlayerInputData inputData)
+        {
             inputData.direction.Normalize();
             _charController.Move(_speed * inputData.direction);
 
