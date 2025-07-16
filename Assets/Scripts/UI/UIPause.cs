@@ -1,4 +1,5 @@
 using Fusion;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,9 +11,15 @@ namespace TDM
         [SerializeField] GraphicRaycaster _raycaster;
         [SerializeField] GameObject[] _goToToggle;
 
+        [SerializeField] TextMeshProUGUI _playerInfo;
+
+        NetworkRunner _runner;
+        NetworkRunner Runner => _runner ?? NetworkRunner.GetRunnerForGameObject(gameObject);
+
         public void ShowUI()
         {
             _canvas.enabled = _raycaster.enabled = true;
+            _playerInfo.text = Runner.LocalPlayer.PlayerId + " | " + (Runner.IsServer ? "Host" : "Client");
         }
 
         public void HideUI()
@@ -36,8 +43,7 @@ namespace TDM
 
         public void OnClick_GoToMainMenu()
         {
-            NetworkRunner runner = NetworkRunner.GetRunnerForGameObject(gameObject);
-            GameManager.SwitchGameState(EGameState.MainMenu, runner);
+            GameManager.SwitchGameState(EGameState.MainMenu, Runner);
 
 #if UNITY_EDITOR
             if (FusionEditorUtils.IsMultiPeerEnabled)
