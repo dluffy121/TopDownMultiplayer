@@ -27,10 +27,24 @@ namespace TDM
 
         #region Runner Handling
 
+        enum EConnectionType { Lobby, Dungeon }
+
         class RunnerData
         {
-            public NetworkRunner runner;
-            public SessionID sessionID;
+            public EConnectionType ConnectionType;
+            public GameMode GameMode; // Track the game mode for this runner
+            public int SceneIndex;
+            public int MaxClients = 20;
+        }
+
+        class RunnerContext
+        {
+            public SessionID SessionID;
+            public NetworkRunner Runner;
+            public RunnerData RunnerData;
+
+            public bool IsValid => Runner != null && RunnerData != null;
+            public bool IsRunning => IsValid && Runner.IsRunning;
         }
 
         [SerializeField] private NetworkRunner _networkRunnerPrefab;
@@ -80,10 +94,16 @@ namespace TDM
 
         private static void OnGameStarted(NetworkRunner runner)
         {
+// Track host runner for Host-Client topology
             if (runner.GameMode == GameMode.Host ||
                 (runner.GameMode == GameMode.AutoHostOrClient && s_Instance._hostRunner == null))
                 s_Instance._hostRunner = runner;
 
+// Determine game state based on topology
+            // Shared mode = Lobby, Host-Client mode = Game
+            if (runner.GameMode == GameMode.Shared)
+                GameManager.SwitchGameState(EGameState.Lobby, runner);
+            else
             GameManager.SwitchGameState(EGameState.Game, runner);
         }
 
