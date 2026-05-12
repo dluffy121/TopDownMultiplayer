@@ -94,17 +94,17 @@ namespace TDM
 
         private static void OnGameStarted(NetworkRunner runner)
         {
-// Track host runner for Host-Client topology
+            // Track host runner for Host-Client topology
             if (runner.GameMode == GameMode.Host ||
                 (runner.GameMode == GameMode.AutoHostOrClient && s_Instance._hostRunner == null))
                 s_Instance._hostRunner = runner;
 
-// Determine game state based on topology
+            // Determine game state based on topology
             // Shared mode = Lobby, Host-Client mode = Game
             if (runner.GameMode == GameMode.Shared)
                 GameManager.SwitchGameState(EGameState.Lobby, runner);
             else
-            GameManager.SwitchGameState(EGameState.Game, runner);
+                GameManager.SwitchGameState(EGameState.Game, runner);
         }
 
         private string GetRunnerName(GameMode mode)
