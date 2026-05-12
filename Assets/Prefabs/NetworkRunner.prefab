@@ -76,6 +76,7 @@ MonoBehaviour:
   IsSceneTakeOverEnabled: 1
   LogSceneLoadErrors: 1
   DestroySpawnedPrefabsOnSceneUnload: 1
+  AddressableScenesLabel: FusionScenes
 --- !u!114 &-4463988177146095166
 MonoBehaviour:
   m_ObjectHideFlags: 0
