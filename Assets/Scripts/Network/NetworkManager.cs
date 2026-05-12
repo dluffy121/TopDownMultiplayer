@@ -237,16 +237,16 @@ namespace TDM
                                                             rotation,
                                                             onBeforeSpawned: onBeforeSpawned);
 
-                foreach (IHostMigrationListener listener in _hostMigrationListeners)
-                    listener?.OnResumeNetworkObject(resumeNO, newNO);
-
                 void onBeforeSpawned(NetworkRunner networkRunner, NetworkObject newNO)
                 {
                     newNO.CopyStateFrom(resumeNO);
 
                     foreach (IHostMigrationListener listener in _hostMigrationListeners)
-                        listener?.OnSpawnNetworkObject(newNO);
+                        listener?.OnSpawnNetworkObject(runnerMigration, resumeNO, newNO);
                 }
+
+                foreach (IHostMigrationListener listener in _hostMigrationListeners)
+                    listener?.OnResumeNetworkObject(runnerMigration, resumeNO, newNO);
             }
 
             // Updates the state information of the scene objects loaded

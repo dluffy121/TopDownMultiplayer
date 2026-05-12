@@ -103,7 +103,14 @@ namespace TDM
 
         public void DespawnPlayer(NetworkRunner runner, PlayerRef player)
         {
-            runner.Despawn(runner.GetPlayerObject(player));
+            if (_players.TryGetValue(player.PlayerId, out NetworkObject playerObject))
+                runner.Despawn(playerObject);
+        }
+
+        public void DespawnPlayer(NetworkRunner runner, Player player)
+        {
+            if (_players.TryGetValue(player.Token, out NetworkObject playerObject))
+                runner.Despawn(playerObject);
         }
 
         private static async void PushNewSnapshot(NetworkRunner runner)
@@ -125,15 +132,13 @@ namespace TDM
 
         #region Host Migration
 
-        void IHostMigrationListener.OnSpawnNetworkObject(NetworkObject newNO)
+        void IHostMigrationListener.OnSpawnNetworkObject(NetworkRunner runnerMigration, NetworkObject resumeNO, NetworkObject newNO)
         {
-            if (newNO.TryGetBehaviour(out Player playerBehaviour))
-            {
-                newNO.AssignInputAuthority(PlayerRef.None);
+            if (!newNO.TryGetBehaviour(out Player playerBehaviour))
+                return;
 
-                // Store mapping between Token and NetworkObject
-                _players[playerBehaviour.Token] = newNO;
-            }
+            newNO.AssignInputAuthority(PlayerRef.None);
+            _players[playerBehaviour.Token] = newNO;
         }
 
         #endregion
